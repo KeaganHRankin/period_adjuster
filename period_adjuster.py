@@ -12,20 +12,38 @@ def adjust_periods(path: str, tables: list, x: int, forwards=True):
     """
     Given tables in a SQLite database, updates each table's
     `period` column by `x` years forward or backward.
+
+    Rows are updated in a safe order so unique constraints that include
+    `period` do not collide while the values are being shifted.
     """
     step = abs(x)
     shift = step if forwards else -step
+    order = "DESC" if forwards else "ASC"
 
     conn = sqlite3.connect(path)
     cur = conn.cursor()
     updated_rows = {}
 
-    for table in tables:
-        cur.execute(f'UPDATE "{table}" SET period = period + ?', (shift,))
-        updated_rows[table] = cur.rowcount if cur.rowcount is not None else 0
+    try:
+        for table in tables:
+            cur.execute(
+                f'SELECT rowid FROM "{table}" ORDER BY period {order}'
+            )
+            rowids = [row[0] for row in cur.fetchall()]
 
-    conn.commit()
-    conn.close()
+            updated_count = 0
+            for rowid in rowids:
+                cur.execute(
+                    f'UPDATE "{table}" SET period = period + ? WHERE rowid = ?',
+                    (shift, rowid),
+                )
+                updated_count += cur.rowcount if cur.rowcount is not None else 0
+
+            updated_rows[table] = updated_count
+
+        conn.commit()
+    finally:
+        conn.close()
 
     direction = 'forward' if forwards else 'backward'
     print(f"adjust_periods: shifted {len(updated_rows)} table(s) {direction} by {step} year(s).")
@@ -57,6 +75,13 @@ def adjust_all_periods(path: str, x: int, forwards=True):
     return adjust_periods(path, tables, x, forwards=forwards)
 
 
+def adjust_selected_periods(path: str, tables: list, x: int, forwards=True):
+    """Shift only the selected tables, or all tables when the list is empty."""
+    if not tables:
+        tables = get_tables_with_period(path)
+    return adjust_periods(path, tables, x, forwards=forwards)
+
+
 def _load_config(config_path: str):
     with open(config_path, "r", encoding="utf-8") as handle:
         return yaml.safe_load(handle)
@@ -84,6 +109,7 @@ if __name__ == "__main__":
     db_path = config["path"]
     x = config["x"]
     forwards = config.get("forwards", True)
+    tables = config.get("tables", []) or []
 
-    updated = adjust_all_periods(db_path, x, forwards=forwards)
+    updated = adjust_selected_periods(db_path, tables, x, forwards=forwards)
     print(updated)

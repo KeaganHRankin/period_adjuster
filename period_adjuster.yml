@@ -1,3 +1,4 @@
-path: C:/path/to/your/database.sqlite # path to DB
+path: C:/Users/keaga/OneDrive - University of Toronto/Saxe Posen Rankin/p2_esom/temoa/data_files/houseflow_dfs/canoe_on_high_cm_16d_update.sqlite # path to DB
 x: 5  # years to shift
-forwards: true # true = forward years, false = backwards years.
+forwards: false # true = forward years, false = backwards years.
+tables: [] # optional list of tables to update; leave empty to update all tables with a period column.

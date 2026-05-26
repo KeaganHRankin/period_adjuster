@@ -17,3 +17,7 @@ Run the script from the repository root:
 ```bash
 python period_adjuster.py period_adjuster.yml
 ```
+
+## Config
+
+The YAML file can include an optional `tables` list to restrict updates to a subset of tables. If `tables` is omitted or left empty, the script updates all tables that contain a `period` column.
