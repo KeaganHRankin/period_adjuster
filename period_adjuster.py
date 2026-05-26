@@ -8,7 +8,7 @@ import sqlite3
 import yaml
 
 
-def period_adjuster(path: str, tables: list, x: int, forwards=True):
+def adjust_periods(path: str, tables: list, x: int, forwards=True):
     """
     Given tables in a SQLite database, updates each table's
     `period` column by `x` years forward or backward.
@@ -28,7 +28,7 @@ def period_adjuster(path: str, tables: list, x: int, forwards=True):
     conn.close()
 
     direction = 'forward' if forwards else 'backward'
-    print(f"period_adjuster: shifted {len(updated_rows)} table(s) {direction} by {step} year(s).")
+    print(f"adjust_periods: shifted {len(updated_rows)} table(s) {direction} by {step} year(s).")
     return updated_rows
 
 
@@ -51,10 +51,10 @@ def get_tables_with_period(path: str):
     return tables_with_period
 
 
-def period_adjuster_all(path: str, x: int, forwards=True):
+def adjust_all_periods(path: str, x: int, forwards=True):
     """Find all tables with a `period` column and shift them by `x` years."""
     tables = get_tables_with_period(path)
-    return period_adjuster(path, tables, x, forwards=forwards)
+    return adjust_periods(path, tables, x, forwards=forwards)
 
 
 def _load_config(config_path: str):
@@ -71,7 +71,7 @@ if __name__ == "__main__":
     parser.add_argument(
         "config",
         nargs="?",
-        default=str(script_dir / "period_adjuster.yml"),
+        default=str(script_dir / "adjust_periods.yml"),
         help="Path to a YAML config file in the same directory as this script.",
     )
     args = parser.parse_args()
@@ -85,5 +85,5 @@ if __name__ == "__main__":
     x = config["x"]
     forwards = config.get("forwards", True)
 
-    updated = period_adjuster_all(db_path, x, forwards=forwards)
+    updated = adjust_all_periods(db_path, x, forwards=forwards)
     print(updated)
